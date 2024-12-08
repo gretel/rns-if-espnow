@@ -1,0 +1,5 @@
+.git/
+.reticulum/
+.envrc
+.DS_Store
+mpbridge.ignore
