@@ -76,31 +76,33 @@ graph TD
         end
         
         subgraph "Communications"
-            UART1[UART1]
-            USB[USB-Serial]
-            WIFI[WiFi Radio]
+            UART0[UART0 - MicroPython REPL]
+            UART1[UART1 - RNS Serial Interface]
+            WIFI[WiFi Radio - ESP-NOW]
         end
     end
     
     subgraph "Connections"
         HOST[Host Computer]
+        RNSD[RNS Daemon]
         AIR[Wireless Medium]
     end
     
     CPU --> LED
     BTN --> CPU
+    CPU <--> UART0
     CPU <--> UART1
-    CPU <--> USB
     CPU <--> WIFI
     
-    USB <--> HOST
+    UART0 <--> HOST
+    UART1 <--> RNSD
     WIFI <--> AIR
     
     classDef peripheral fill:#f9f,stroke:#333
     classDef comm fill:#bbf,stroke:#333
     class LED,BTN peripheral
-    class UART1,USB,WIFI comm
-```
+    class UART0,UART1,WIFI comm
+```    
 
 ## 🔧 Components
 
@@ -156,12 +158,14 @@ ESP-NOW on ESP32 supports a special long range (LR) mode that extends communicat
 - More robust in noisy RF environments
 - Power consumption increases slightly
 
-The tradeoff between range and speed can be configured through the ESP-NOW API:
+The tradeoff between range and speed could be configured through the ESP-NOW API:
 
 ```c
 esp_wifi_config_espnow_rate(WIFI_IF_STA, WIFI_PHY_RATE_LORA_250K);  // Longest range
 esp_wifi_config_espnow_rate(WIFI_IF_STA, WIFI_PHY_RATE_LORA_500K);  // Balanced
 ```
+
+Unfortunately, setting rate requires IDF>=4.3.0 which MicroPython currently does not support.
 
 ## 🔄 Data Flow
 
