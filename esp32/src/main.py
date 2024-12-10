@@ -114,7 +114,9 @@ class RNSNOW:
         self.current_channel = WIFI_CHANNEL
         self.sta.config(channel=self.current_channel)
         self.sta.config(protocol=network.MODE_LR) # TODO: abstraction, doc
-        self.sta.config(pm=self.sta.PM_PERFORMANCE) # TODO: abstraction, doc
+        #self.sta.config(pm=self.sta.PM_PERFORMANCE)
+        self.sta.config(pm=self.sta.PM_NONE) # TODO: abstraction, doc
+        #self.sta.config(rate=0x29) # IDF>=4.3.0 only - https://docs.espressif.com/projects/esp-idf/en/v4.4.1/esp32/api-reference/network/esp_wifi.html#_CPPv423WIFI_PHY_RATE_LORA_250K
         self.log.info("WiFi configured - initial channel %d", self.current_channel)
 
         # Add broadcast peer
