@@ -1,12 +1,13 @@
 # https://github.com/gretel/rns-if-espnow
-import network
-import espnow
-import asyncio
 from machine import Pin, Timer, UART, WDT
+from micropython import const
+import aioespnow
+import asyncio
+import espnow
 import machine
+import network
 import sys
 import time
-import aioespnow
 
 # Log levels
 LOG_DEBUG = const(10)
@@ -113,9 +114,11 @@ class RNSNOW:
         # Initial channel configuration
         self.current_channel = WIFI_CHANNEL
         self.sta.config(channel=self.current_channel)
-        self.sta.config(protocol=network.MODE_LR) # TODO: abstraction, doc
+        self.sta.config(protocol=network.MODE_LR)
+
         #self.sta.config(pm=self.sta.PM_PERFORMANCE)
-        self.sta.config(pm=self.sta.PM_NONE) # TODO: abstraction, doc
+        self.sta.config(pm=self.sta.PM_NONE)
+
         #self.sta.config(rate=0x29) # IDF>=4.3.0 only - https://docs.espressif.com/projects/esp-idf/en/v4.4.1/esp32/api-reference/network/esp_wifi.html#_CPPv423WIFI_PHY_RATE_LORA_250K
         self.log.info("WiFi configured - initial channel %d", self.current_channel)
 
@@ -199,7 +202,7 @@ class RNSNOW:
     async def _send_ping(self):
         """Send ping frame and blink LED"""
         try:
-            self.log.debug("Sending ping frame")
+            self.log.info("Sending ping frame on channel %d", self.current_channel)
             await self.send_espnow(PING_FRAME)
             await self._blink_led(3, 50, 50)
         except Exception as e:
@@ -363,6 +366,8 @@ async def main():
         machine.reset()
 
 try:
+    # tidy memory
+    gc.collect()
     asyncio.run(main())
 except Exception as e:
     Logger("Startup").exc(e, "Failed to start - resetting")
