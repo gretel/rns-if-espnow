@@ -1,3 +1,4 @@
+# https://github.com/gretel/rns-if-espnow
 import network
 import espnow
 import asyncio
@@ -22,17 +23,12 @@ PIN_RX = const(25)
 LED_ON = const(0)
 LED_OFF = const(1)
 
-# Protocol Constants
-BROADCAST_MAC = b'\xff' * 6
-HDLC_ESC = const(0x7D)
-HDLC_ESC_MASK = const(0x20)
-HDLC_FLAG = const(0x7E)
-
 GROUP_ID = b'RNS1'
 PING_FRAME = GROUP_ID + b'PING'
 PROBE_FRAME = GROUP_ID + b'PROBE'
 PROBE_RESPONSE = GROUP_ID + b'ACK'
 
+BROADCAST_MAC = b'\xff' * 6
 RNS_MTU = const(500)
 SCAN_ATTEMPTS = const(3)
 SCAN_TIMEOUT_MS = const(500)
@@ -42,6 +38,11 @@ WIFI_CHANNEL = const(3)
 SLEEP_SHORT = const(5)
 SLEEP_MEDIUM = const(10)
 PREFERRED_CHANNELS = (1,6,11)
+
+# Protocol Constants
+HDLC_ESC = const(0x7D)
+HDLC_ESC_MASK = const(0x20)
+HDLC_FLAG = const(0x7E)
 
 class Logger:
     def __init__(self, name):
@@ -77,10 +78,10 @@ class Logger:
             self.error(msg)
         sys.print_exception(e)
 
-class RetiESPNOW:
+class RNSNOW:
     def __init__(self, baud=115200):
-        self.log = Logger("RetiESPNOW")
-        self.log.info("Initializing ESP-NOW interface")
+        self.log = Logger("RNS-NOW")
+        self.log.info("Initializing ESP-NOW interface for Reticulum")
         
         self.watchdog = WDT(timeout=8000)
         
@@ -112,8 +113,8 @@ class RetiESPNOW:
         # Initial channel configuration
         self.current_channel = WIFI_CHANNEL
         self.sta.config(channel=self.current_channel)
-        self.sta.config(protocol=network.MODE_LR)
-        self.sta.config(pm=self.sta.PM_PERFORMANCE)
+        self.sta.config(protocol=network.MODE_LR) # TODO: abstraction, doc
+        self.sta.config(pm=self.sta.PM_PERFORMANCE) # TODO: abstraction, doc
         self.log.info("WiFi configured - initial channel %d", self.current_channel)
 
         # Add broadcast peer
@@ -145,7 +146,7 @@ class RetiESPNOW:
 
         # Scan preferred channels first, then others
         channels = list(PREFERRED_CHANNELS)
-        channels.extend(ch for ch in range(1, 14) if ch not in PREFERRED_CHANNELS)
+        channels.extend(ch for ch in range(1, 13) if ch not in PREFERRED_CHANNELS) # TODO: channel range (eu)
 
         for channel in channels:
             responses = 0
@@ -216,10 +217,6 @@ class RetiESPNOW:
 
     async def send_espnow(self, data: bytes) -> bool:
         """Send framed data via ESP-NOW broadcast"""
-        if not isinstance(data, (bytes, bytearray)):
-            self.log.error("Data must be bytes or bytearray")
-            return False
-            
         if len(data) > RNS_MTU:
             self.log.error("Packet exceeds MTU: %d > %d", len(data), RNS_MTU)
             return False
@@ -321,7 +318,7 @@ class RetiESPNOW:
             if not self.uart:
                 try:
                     self.uart = machine.UART(UART_NUM, tx=PIN_TX, rx=PIN_RX, 
-                        baudrate=self.baud, timeout=0, timeout_char=0, rxbuf=UART_BUFFER_SIZE)
+                        baudrate=self.baud, timeout=0, timeout_char=0, rxbuf=UART_BUFFER_SIZE) # TODO: txbuf?
                     self.log.info("Initialized UART%d (TX:%d, RX:%d, %d baud)", 
                         UART_NUM, PIN_TX, PIN_RX, self.baud)
                 except Exception as e:
@@ -337,7 +334,7 @@ class RetiESPNOW:
                 asyncio.create_task(self._blink_led(1, 10, 0))
                 
                 if msg == self._frame_data(PING_FRAME):
-                    self.log.info("Ping frame received")
+                    self.log.info("Ping frame received from %s", mac_str)
                     await self._blink_led(3, 50, 50)
                 elif msg == self._frame_data(PROBE_FRAME):
                     await self.send_espnow(PROBE_RESPONSE)
@@ -355,7 +352,7 @@ async def main():
     log.info("Starting interface")
     
     try:
-        reti = RetiESPNOW()
+        reti = RNSNOW()
         uart_task = asyncio.create_task(reti.process_uart())
         espnow_task = asyncio.create_task(reti.process_espnow())
         await asyncio.gather(uart_task, espnow_task)
