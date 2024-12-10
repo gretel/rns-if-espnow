@@ -23,6 +23,18 @@ This code is under active development and not yet ready for general use. While c
 - 🧩 Simple protocol design
 - ⚙️ Zero configuration needed
 
+## 🐍 Why MicroPython?
+
+MicroPython provides ideal characteristics for RNS ESP-NOW interface development:
+
+- **Rapid Development**: Interactive REPL and runtime execution enables fast prototyping and testing without compilation cycles
+- **Python Ecosystem**: Directly aligns with Reticulum's Python codebase, allowing shared implementation patterns and code reuse
+- **Performance**: AsyncIO enables efficient concurrent I/O handling for UART and ESP-NOW operations
+
+### Flashing
+
+Before starting, MicroPython needs to be [flashed](https://docs.micropython.org/en/latest/esp32/tutorial/intro.html) to the ESP32. The [mpremote](https://github.com/micropython/micropython/tree/master/tools/mpremote) tool is recommended for device management and file operations.
+
 ## 🌐 System Architecture
 
 ### Data Flow Architecture
