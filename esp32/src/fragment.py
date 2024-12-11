@@ -1,18 +1,16 @@
 from micropython import const
 import struct
+from log import Logger
 
-RNS_MTU = const(500)
-ESPNOW_MTU = const(250)
-EFFECTIVE_MTU = const(220) # TODO: optimize, just a guess
-
-FRAGMENT_HEADER_SIZE = const(4)
-FRAGMENT_MARGIN = const(10)  # Extra margin for HDLC framing
-FRAGMENT_MAX_PAYLOAD = const(236)  # ESPNOW_MTU(250) - HEADER(4) - MARGIN(10)
+ESPNOW_MTU = const(250)       # ESP-NOW physical limit
+FRAGMENT_HEADER_SIZE = const(4)  # flags(1) + packet_id(2) + sequence(1)
+FRAGMENT_MAX_PAYLOAD = const(100) # ESPNOW_MTU minus header and safety margin
 FLAG_FIRST = const(0x80)
 FLAG_LAST = const(0x40)
 
 class Fragmentor:
     def __init__(self):
+        self.log = Logger("Fragment")
         self._packet_id = 0
         self._reassembly_buffers = {}
         
@@ -46,7 +44,7 @@ class Fragmentor:
             
         return fragments
         
-    def process_fragment(self, fragment: bytes):
+    def process_fragment(self, fragment: bytes) -> bytes | None:
         if len(fragment) < FRAGMENT_HEADER_SIZE:
             return None
             
@@ -68,11 +66,17 @@ class Fragmentor:
         
         if flags & FLAG_LAST:
             try:
-                assembled = bytearray()
+                total_size = sum(len(f) for f in buffer["fragments"].values())
+                assembled = bytearray(total_size)
+                pos = 0
+                
                 for i in range(len(buffer["fragments"])):
                     if i not in buffer["fragments"]:
                         return None
-                    assembled.extend(buffer["fragments"][i])
+                    fragment_data = buffer["fragments"][i]
+                    assembled[pos:pos + len(fragment_data)] = fragment_data
+                    pos += len(fragment_data)
+                    
                 del self._reassembly_buffers[packet_id]
                 return bytes(assembled)
             except:

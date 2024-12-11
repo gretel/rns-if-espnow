@@ -2,16 +2,19 @@ from micropython import const
 import sys
 import time
 
-LOG_DEBUG = const(10)
-LOG_INFO = const(20)
-LOG_WARNING = const(30)
-LOG_ERROR = const(40)
-LOG_CRITICAL = const(50)
+# Log levels aligned with syslog severity levels
+LOG_DEBUG = const(10)    # Debug: debug-level messages
+LOG_INFO = const(20)     # Informational: normal operational messages
+LOG_WARNING = const(30)  # Warning: warning conditions
+LOG_ERROR = const(40)    # Error: error conditions
+LOG_CRITICAL = const(50) # Critical: critical conditions
 
 class Logger:
+    """Compact logging facility with severity levels and timestamps"""
+    
     def __init__(self, name):
         self.name = name
-        self.level = LOG_INFO
+        self.level = LOG_INFO # FIXME: configuration
 
     def _log(self, level, msg, *args):
         if level >= self.level:

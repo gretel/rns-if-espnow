@@ -13,16 +13,13 @@ from hdlc import HDLCProcessor, HDLC_FLAG
 from fragment import Fragmentor
 from log import Logger
 
-# Network Configuration
 GROUP_ID = b'RNS09'
-
 PING_FRAME = GROUP_ID + b'PING'
 PROBE_FRAME = GROUP_ID + b'PROBE'
 PROBE_RESPONSE = GROUP_ID + b'ACK'
-
 BROADCAST_MAC = b'\xff' * 6
 
-UART_BUFFER_SIZE = const(1024)
+UART_BUFFER_SIZE = const(1536)
 UART_NUM = const(1)
 WIFI_CHANNEL = const(3)
 SCAN_ATTEMPTS = const(3)
@@ -113,6 +110,7 @@ class RNSNOW:
                 
         self.current_channel = best_channel
         self.sta.config(channel=best_channel)
+        # FIXME: for some reason this log output didnt occur to me?
         if max_responses > 0:
             self.log.info("Found %d peers on channel %d", max_responses, best_channel)
         else:
@@ -186,12 +184,12 @@ class RNSNOW:
         self.log.info("Starting ESP-NOW processing")
         
         while True:
-            self.watchdog.feed() # woof!
+            self.watchdog.feed()
             
             if not self.uart:
                 try:
                     self.uart = machine.UART(UART_NUM, tx=PIN_TX, rx=PIN_RX, 
-                        baudrate=self.baud, timeout=0, timeout_char=0, rxbuf=UART_BUFFER_SIZE)
+                        baudrate=self.baud, timeout=0, timeout_char=0, rxbuf=UART_BUFFER_SIZE, txbuf=UART_BUFFER_SIZE)
                     self.log.info("Initialized UART%d (TX:%d, RX:%d, %d baud)", 
                         UART_NUM, PIN_TX, PIN_RX, self.baud)
                 except Exception as e:
