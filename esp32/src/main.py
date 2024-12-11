@@ -83,7 +83,7 @@ class RNSNOW:
         max_responses = 0
 
         channels = list(PREFERRED_CHANNELS)
-        channels.extend(ch for ch in range(1, 13) if ch not in PREFERRED_CHANNELS)
+        channels.extend(ch for ch in range(1, 13) if ch not in PREFERRED_CHANNELS) # FIXME: region vs. channels
 
         for channel in channels:
             responses = 0
@@ -186,7 +186,7 @@ class RNSNOW:
         self.log.info("Starting ESP-NOW processing")
         
         while True:
-            self.watchdog.feed()
+            self.watchdog.feed() # woof!
             
             if not self.uart:
                 try:
@@ -210,7 +210,7 @@ class RNSNOW:
                     
                 if msg == PROBE_FRAME:
                     await self.send_espnow(PROBE_RESPONSE, raw=True)
-                    self.log.debug("Probe request received, sent response")
+                    self.log.info("Probe request received, sent response to %s", mac_str)
                     continue
 
                 if msg and len(msg) > 0:

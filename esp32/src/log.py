@@ -11,7 +11,7 @@ LOG_CRITICAL = const(50)
 class Logger:
     def __init__(self, name):
         self.name = name
-        self.level = LOG_DEBUG
+        self.level = LOG_INFO
 
     def _log(self, level, msg, *args):
         if level >= self.level:

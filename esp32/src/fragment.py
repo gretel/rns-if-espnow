@@ -3,7 +3,7 @@ import struct
 
 RNS_MTU = const(500)
 ESPNOW_MTU = const(250)
-EFFECTIVE_MTU = const(220)
+EFFECTIVE_MTU = const(220) # TODO: optimize, just a guess
 
 FRAGMENT_HEADER_SIZE = const(4)
 FRAGMENT_MARGIN = const(10)  # Extra margin for HDLC framing

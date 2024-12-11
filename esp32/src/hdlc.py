@@ -4,7 +4,7 @@ from log import Logger
 HDLC_ESC = const(0x7D)
 HDLC_ESC_MASK = const(0x20)
 HDLC_FLAG = const(0x7E)
-RNS_MTU = const(500) # FIXME: some packets get discarded, think HDLC overhead
+MAX_SIZE = const(526) # TODO: some packets got discarded, think HDLC overhead
 
 class HDLCProcessor:
     def __init__(self):
@@ -58,8 +58,8 @@ class HDLCProcessor:
                 
             self.rx_buffer.append(byte)
             
-            if len(self.rx_buffer) > RNS_MTU:
-                self.log.error("Frame too long, discarding")
+            if len(self.rx_buffer) > MAX_SIZE:
+                self.log.error("Frame too long at %d, discarding", len(self.rx_buffer))
                 self.rx_buffer = bytearray()
                 self.in_frame = False
                 self.escape = False
