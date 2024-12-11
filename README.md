@@ -116,7 +116,19 @@ Framing is done using [`HDLC`](https://en.wikipedia.org/wiki/High-Level_Data_Lin
 - Power management optimized (also needs testing)
 - Channel scanning for automatic peer discovery
 
-### 👾 Hardware
+## 🔄 Data Flow
+
+### UART to ESP-NOW
+1. Buffer serial data
+2. Process complete frames
+3. Broadcast via ESP-NOW
+
+### ESP-NOW to UART
+1. Receive broadcasts
+2. Handle special frames (ping/probe)
+3. Forward regular frames to UART
+
+## 👾 Hardware
 
 Simply put, it's very simple 😉
 
@@ -206,19 +218,7 @@ esp_wifi_config_espnow_rate(WIFI_IF_STA, WIFI_PHY_RATE_LORA_250K);  // Longest r
 esp_wifi_config_espnow_rate(WIFI_IF_STA, WIFI_PHY_RATE_LORA_500K);  // Balanced
 ```
 
-Unfortunately, setting rate requires IDF>=4.3.0 which MicroPython currently does not support.
-
-## 🔄 Data Flow
-
-### UART to ESP-NOW
-1. Buffer serial data
-2. Process complete frames
-3. Broadcast via ESP-NOW
-
-### ESP-NOW to UART
-1. Receive broadcasts
-2. Handle special frames (ping/probe)
-3. Forward regular frames to UART
+> Unfortunately, setting rate requires IDF>=4.3.0 which MicroPython currently does not support.
 
 ## 🔍 Network Discovery
 
