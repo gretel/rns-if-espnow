@@ -219,6 +219,10 @@ Contributions welcome! Please:
 - 🔧 Submit pull requests
 - 📢 Share your experiences
 
+## Sponsor
+
+This work is supported by the [Critical Decentralisation Cluster (CDC)](https://decentral.community/) - thank you very much!
+
 ## 📄 License
 
 MIT License - See LICENSE file for full details.
