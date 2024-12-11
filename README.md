@@ -31,51 +31,94 @@ MicroPython provides ideal characteristics for RNS ESP-NOW interface development
 - **Python Ecosystem**: Directly aligns with Reticulum's Python codebase, allowing shared implementation patterns and code reuse
 - **Performance**: AsyncIO enables efficient concurrent I/O handling for UART and ESP-NOW operations
 
-### Flashing
+### 📸 Flashing
 
 Before starting, MicroPython needs to be [flashed](https://docs.micropython.org/en/latest/esp32/tutorial/intro.html) to the ESP32. The [mpremote](https://github.com/micropython/micropython/tree/master/tools/mpremote) tool is recommended for device management and file operations.
 
-## 🌐 System Architecture
+## 🌐 System Design
 
-### Data Flow Architecture
+### Modules
 
 ```mermaid
-graph LR
-    subgraph "Host Computer"
-        RNS[Reticulum Daemon]
-    end
-    
-    subgraph "ESP32 Bridge"
-        UART[UART Interface]
-        HDLC[HDLC Framing]
-        ESP[ESP-NOW Radio]
-    end
-    
-    subgraph "Wireless Medium"
-        RF[2.4 GHz RF]
-    end
-    
-    subgraph "Remote ESP32 Bridge"
-        ESP2[ESP-NOW Radio]
-        HDLC2[HDLC Framing]
-        UART2[UART Interface]
-    end
-    
-    subgraph "Remote Host"
-        RNS2[Reticulum Daemon]
-    end
-    
-    RNS <-->|Serial| UART
-    UART <-->|Bytes| HDLC
-    HDLC <-->|Frames| ESP
-    ESP <-->|ESP-NOW| RF
-    RF <-->|ESP-NOW| ESP2
-    ESP2 <-->|Frames| HDLC2
-    HDLC2 <-->|Bytes| UART2
-    UART2 <-->|Serial| RNS2
+classDiagram
+    class RNSNOW {
+        -Logger log
+        -HDLCProcessor hdlc
+        -Fragmentor fragmentor
+        -Hardware hw
+        -UART uart
+        +__init__(baud: int)
+        +send_espnow(data: bytes, raw: bool)
+        -_send_ping()
+        -_initial_channel_scan()
+        +process_uart()
+        +process_espnow()
+    }
+
+    class HDLCProcessor {
+        -Logger log
+        -bytearray rx_buffer
+        -bool in_frame
+        -bool escape
+        +frame_data(data: bytes)
+        +process_byte(byte: int)
+        -_escape_hdlc(data: bytes)
+    }
+
+    class Fragmentor {
+        -Logger log
+        -int _packet_id
+        -dict _reassembly_buffers
+        +fragment_data(data: bytes)
+        +process_fragment(fragment: bytes)
+        -_next_packet_id()
+    }
+
+    class Hardware {
+        -Pin led
+        -Pin btn
+        -int last_button_press
+        -callback button_callback
+        +blink_led(times: int)
+        -_check_buttons()
+    }
+
+    class Logger {
+        -str name
+        -int level
+        +debug(msg: str)
+        +info(msg: str)
+        +warning(msg: str)
+        +error(msg: str)
+        +critical(msg: str)
+        +exc(e: Exception)
+    }
+
+    RNSNOW --> HDLCProcessor
+    RNSNOW --> Fragmentor
+    RNSNOW --> Hardware
+    RNSNOW --> Logger
+    HDLCProcessor --> Logger
+    Fragmentor --> Logger
 ```
 
-### Hardware Architecture
+Framing is done using [`HDLC`](https://en.wikipedia.org/wiki/High-Level_Data_Link_Control) from/to Reticulum.
+
+### 🔌 UART Processing
+- [Interfaces](https://github.com/markqvist/Reticulum/blob/master/RNS/Interfaces/SerialInterface.py) with Reticulum daemon (`rnsd`)
+- Configurable pins and baud rate
+- Handles frame buffering and delimiting
+
+### 📻 ESP-NOW Transport
+- WiFi station mode (no access point needed - "ad hoc")
+- Group broadcast approach (think `VLAN`)
+- Long range mode enabled (needs testing)
+- Power management optimized (also needs testing)
+- Channel scanning for automatic peer discovery
+
+### 👾 Hardware
+
+Simply put, it's very simple 😉
 
 ```mermaid
 graph TD
@@ -116,21 +159,7 @@ graph TD
     class UART0,UART1,WIFI comm
 ```    
 
-## 🔧 Components
-
-Framing is done using [`HDLC`](https://en.wikipedia.org/wiki/High-Level_Data_Link_Control) from/to Reticulum.
-
-### 🔌 UART Processing
-- [Interfaces](https://github.com/markqvist/Reticulum/blob/master/RNS/Interfaces/SerialInterface.py) with Reticulum daemon (`rnsd`)
-- Configurable pins and baud rate
-- Handles frame buffering and delimiting
-
-### 📻 ESP-NOW Transport
-- WiFi station mode (no access point needed - "ad hoc")
-- Group broadcast approach (think `VLAN`)
-- Long range mode enabled (needs testing)
-- Power management optimized (also needs testing)
-- Channel scanning for automatic peer discovery
+> Due to the lack of `CDC` support but on the `rpi` ports of MicroPython we have to use two UARTs. This may change in the future.
 
 ## 📡 RF Characteristics 
 
@@ -160,7 +189,7 @@ Performance can be optimized by:
 - Implementing efficient packet fragmentation
 - Choosing appropriate retry strategies
 
-### Long Range Mode
+### 🚇 Long Range Mode
 
 ESP-NOW on ESP32 supports a special long range (LR) mode that extends communication range at the cost of bandwidth. When enabled:
 
@@ -219,7 +248,7 @@ Contributions welcome! Please:
 - 🔧 Submit pull requests
 - 📢 Share your experiences
 
-## Sponsor
+## 🎫 Sponsor
 
 This work is supported by the [Critical Decentralisation Cluster (CDC)](https://decentral.community/) - thank you very much!
 
