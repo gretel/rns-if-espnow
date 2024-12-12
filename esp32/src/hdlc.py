@@ -1,36 +1,28 @@
 from micropython import const
 from log import Logger
 
-HDLC_ESC = const(0x7D)
-HDLC_ESC_MASK = const(0x20)
-HDLC_FLAG = const(0x7E)
-#RNS_MTU = const(500)  # MTU excluding IFAC signatures
+# Protocol Constants
+HDLC_FLAG = const(0x7E)  # Frame boundary marker
+HDLC_ESC = const(0x7D)   # Escape sequence identifier
+HDLC_ESC_MASK = const(0x20)  # Escape bit modification
 
 class HDLCProcessor:
+    """High-level Data Link Control protocol implementation"""
     def __init__(self):
         self.log = Logger("HDLC")
         self.rx_buffer = bytearray()
         self.in_frame = False
         self.escape = False
-
-    def _escape_hdlc(self, data: bytes) -> bytes:
-        escaped = list()
-        for byte in data:
-            if byte == HDLC_ESC:
-                escaped.extend([HDLC_ESC, HDLC_ESC ^ HDLC_ESC_MASK])
-            elif byte == HDLC_FLAG:
-                escaped.extend([HDLC_ESC, HDLC_FLAG ^ HDLC_ESC_MASK])
-            else:
-                escaped.append(byte)
-        return bytes(escaped)
-
+        
     def frame_data(self, data: bytes) -> bytes:
+        """Wrap data in HDLC frame with escape sequences"""
         if isinstance(data, str):
             data = data.encode()
         escaped = self._escape_hdlc(data)
         return bytes([HDLC_FLAG]) + escaped + bytes([HDLC_FLAG])
-
+        
     def process_byte(self, byte: int) -> bytes:
+        """Process byte stream into HDLC frames"""
         if byte == HDLC_FLAG:
             if self.in_frame and len(self.rx_buffer) > 0:
                 frame = bytes(self.rx_buffer)
@@ -48,20 +40,26 @@ class HDLCProcessor:
             if byte == HDLC_ESC:
                 self.escape = True
                 return None
-            
+
             if self.escape:
                 if byte == HDLC_FLAG ^ HDLC_ESC_MASK:
                     byte = HDLC_FLAG
                 elif byte == HDLC_ESC ^ HDLC_ESC_MASK:
                     byte = HDLC_ESC
                 self.escape = False
-                
+
             self.rx_buffer.append(byte)
-            
-            # if len(self.rx_buffer) > RNS_MTU:
-            #     self.log.warning("Frame size exceeding %d at %d", RNS_MTU, len(self.rx_buffer))
-            #     self.rx_buffer = bytearray()
-            #     self.in_frame = False
-            #     self.escape = False
-                
+
         return None
+
+    def _escape_hdlc(self, data: bytes) -> bytes:
+        """Apply HDLC escape sequences to data"""
+        escaped = list()
+        for byte in data:
+            if byte == HDLC_ESC:
+                escaped.extend([HDLC_ESC, HDLC_ESC ^ HDLC_ESC_MASK])
+            elif byte == HDLC_FLAG:
+                escaped.extend([HDLC_ESC, HDLC_FLAG ^ HDLC_ESC_MASK])
+            else:
+                escaped.append(byte)
+        return bytes(escaped)

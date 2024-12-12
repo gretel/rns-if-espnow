@@ -31,7 +31,7 @@ class Hardware:
                     asyncio.create_task(self.button_callback())
                 self.last_button_press = current_time
 
-    async def blink_led(self, times=1, on_ms=50, off_ms=50):
+    async def blink_led(self, times=1, on_ms=30, off_ms=30):
         for _ in range(times):
             self.led.value(LED_ON)
             await asyncio.sleep_ms(on_ms)
