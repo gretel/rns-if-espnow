@@ -1,0 +1,13 @@
+# https://micropython-stubs.readthedocs.io/en/main/26_pylint.html#pylint-legacy-configuration
+# ..
+# pip install pylint
+# pip install -U micropython-esp32-stubs --no-user --target ./typings
+
+[MASTER]
+init-hook='import sys;sys.path[1:1] = ["./typings"];'
+
+[MESSAGES CONTROL]
+confidence=
+disable = missing-docstring, missing-function-docstring, multiple-statements, line-too-long, trailing-newlines, broad-except, logging-format-interpolation,
+        invalid-name, empty-docstring, no-method-argument, assignment-from-no-return, too-many-function-args, unexpected-keyword-arg,
+        import-error, broad-exception-caught, no-member

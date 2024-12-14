@@ -1,5 +1,7 @@
 .git/
-.reticulum/
+.reticulum*
+.nomadnet*
 .envrc
 .DS_Store
 mpbridge.ignore
+typings
