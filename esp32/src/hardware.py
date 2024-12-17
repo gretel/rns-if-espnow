@@ -3,20 +3,15 @@ from machine import Pin, Timer
 import asyncio
 import time
 
-# Hardware
-PIN_LED = const(10)
-PIN_BTN = const(37)
-PIN_TX = const(26)
-PIN_RX = const(25)
 LED_ON = const(0)
 LED_OFF = const(1)
-
 BUTTON_COOLDOWN_MS = const(1000)
 
 class Hardware:
-    def __init__(self, button_callback=None):
-        self.led = Pin(PIN_LED, Pin.OUT)
-        self.btn = Pin(PIN_BTN, Pin.IN)
+    def __init__(self, config, button_callback=None):
+        self.config = config
+        self.led = Pin(config.led_pin, Pin.OUT)
+        self.btn = Pin(config.button1_pin, Pin.IN)
         self.last_button_press = 0
         self.button_callback = button_callback
         
