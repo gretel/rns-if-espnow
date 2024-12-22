@@ -27,6 +27,11 @@ class Config:
         self.data = DEFAULT_CONFIG.copy()
         self.load()
 
+    def reset(self):
+        self.data = DEFAULT_CONFIG.copy()
+        self.log.info("Reset to default configuration")
+        self.save()
+
     def load(self):
         try:
             if CONFIG_FILE in os.listdir():

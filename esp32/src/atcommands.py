@@ -10,7 +10,7 @@ ERROR = "ERROR"
 
 # Extended responses
 INVALID = "INVALID PARAMETER"
-RESET = "RESET PENDING - AT&W"
+RESET = "RESET PENDING"
 
 # Standard Hayes baudrates and additional high speeds
 VALID_BAUDRATES = [300, 1200, 2400, 4800, 9600, 19200, 38400, 57600, 115200, 230400, 460800, 921600]
@@ -42,7 +42,7 @@ class ATCommands:
         if cmd == "ATI": return self._get_info()
         if cmd == "AT&F": return self._factory_reset()
         if cmd == "AT&V": return self._view_config()
-        if cmd == "AT&W": return self._reset()
+        if cmd == "AT&W": return self.config.save()
         # TODO: add stats from espnow
         
         # Configuration commands
@@ -64,8 +64,7 @@ class ATCommands:
         return json.dumps(self.config.data)
 
     def _factory_reset(self):
-        self.config.data = DEFAULT_CONFIG.copy() # FIXME
-        self.config.save()
+        self.config.reset()
         return RESET
 
     def _set_description(self, value):
@@ -74,7 +73,6 @@ class ATCommands:
             if len(desc) > 255:
                 return INVALID
             self.config.description = desc
-            self.config.save()
             return OK
         except:
             return ERROR
@@ -85,7 +83,6 @@ class ATCommands:
             if baud not in VALID_BAUDRATES:
                 return INVALID
             self.config.baudrate = baud
-            self.config.save()
             self.event_bus.emit('ch_bd', baud)
             return RESET
         except:
@@ -97,7 +94,6 @@ class ATCommands:
             if not 1 <= chan <= 14:
                 return INVALID
             self.config.channel = chan
-            self.config.save()
             self.event_bus.emit('ch_ch', chan)
             return RESET
         except:
@@ -110,7 +106,6 @@ class ATCommands:
             # Validate hex
             int(value, 16)
             self.config.mac = value
-            self.config.save()
             return OK
         except:
             return ERROR
@@ -121,7 +116,6 @@ class ATCommands:
             if level not in [LOG_CRITICAL, LOG_ERROR, LOG_WARNING, LOG_INFO, LOG_DEBUG]:
                 return INVALID
             self.config.loglevel = level
-            self.config.save()
             self.log.level = level
             return OK
         except:
@@ -132,8 +126,7 @@ class ATCommands:
         if value not in ["default", "lr"]:
             return INVALID
         self.config.protocol = value
-        self.config.save()
-        return RESET
+        return AT&W
 
     def _set_pins(self, value):
         try:
@@ -147,7 +140,6 @@ class ATCommands:
                 return INVALID
                 
             self.config.data["pins"][pin_name] = pin_val
-            self.config.save()
             return RESET
         except:
             return ERROR
