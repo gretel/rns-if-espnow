@@ -26,14 +26,14 @@ class Config:
         self.log = Logger("Config")
         self.data = DEFAULT_CONFIG.copy()
         self.load()
-        
+
     def load(self):
         try:
             if CONFIG_FILE in os.listdir():
                 with open(CONFIG_FILE) as f:
                     stored = json.load(f)
                     self.data.update(stored)
-                self.log.info("Loaded configuration from %s", CONFIG_FILE)
+                self.log.info("Loaded configuration from %s: %s", CONFIG_FILE, self.data)
         except Exception as e:
             self.log.exc(e, "Error loading config")
             
@@ -41,7 +41,8 @@ class Config:
         try:
             with open(CONFIG_FILE, 'w') as f:
                 json.dump(self.data, f)
-            self.log.info("Saved configuration to %s", CONFIG_FILE)
+            self.log.info("Saved configuration to %s:\n%s", CONFIG_FILE, self.data)
+
             return True
         except Exception as e:
             self.log.exc(e, "Error saving config")

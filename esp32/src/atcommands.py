@@ -2,6 +2,7 @@ from micropython import const
 import json
 import machine
 from log import Logger, LOG_CRITICAL, LOG_ERROR, LOG_WARNING, LOG_INFO, LOG_DEBUG
+from eventbus import EventBus
 
 # Standard Hayes responses
 OK = "OK"
@@ -15,12 +16,13 @@ RESET = "RESET PENDING - AT&W"
 VALID_BAUDRATES = [300, 1200, 2400, 4800, 9600, 19200, 38400, 57600, 115200, 230400, 460800, 921600]
 
 class ATCommands:
-    def __init__(self, config, uart):
+    def __init__(self, config, bus, uart):
         self.config = config
         self.uart = uart
         self.log = Logger("AT")
         self.buffer = ""
-        
+        self.event_bus = bus
+
     def process_byte(self, byte):
         char = chr(byte)
         if char == '\r':
@@ -51,7 +53,6 @@ class ATCommands:
         if cmd.startswith("AT+LOG="): return self._set_loglevel(cmd[7:])
         if cmd.startswith("AT+PROTO="): return self._set_protocol(cmd[9:])
         if cmd.startswith("AT+PINS="): return self._set_pins(cmd[7:])
-        if cmd == "AT+IDENT": return self._trigger_ident()
         if cmd == "AT+RESET": return self._reset()
         
         return ERROR
@@ -85,6 +86,7 @@ class ATCommands:
                 return INVALID
             self.config.baudrate = baud
             self.config.save()
+            self.event_bus.emit('ch_bd', baud)
             return RESET
         except:
             return ERROR
@@ -96,6 +98,7 @@ class ATCommands:
                 return INVALID
             self.config.channel = chan
             self.config.save()
+            self.event_bus.emit('ch_ch', chan)
             return RESET
         except:
             return ERROR
@@ -148,13 +151,6 @@ class ATCommands:
             return RESET
         except:
             return ERROR
-
-    def _trigger_ident(self):
-        """Simulate receiving a ping for visual feedback"""
-        self.log.info("Identity triggered via AT command")
-        # TODO: This requires access to the Hardware instance
-        # Add callback to constructor if needed
-        return OK
 
     def _reset(self):
         """Log and reset device"""

@@ -10,6 +10,7 @@ import sys
 import uselect
 import ubinascii
 
+from eventbus import EventBus
 from config import Config 
 from hardware import Hardware
 from hdlc import HDLCProcessor, HDLC_FLAG
@@ -36,12 +37,16 @@ class RNSNOW:
 
         self.log.info("Initializing uid %s", MACHINE_UID)
 
+        self.event_bus = EventBus()
+        self.event_bus.add_listener('ch_ch', self._change_channel)
+        self.event_bus.add_listener('ch_bd', self._change_baudrate)
+        
         # Core components
         self.watchdog = WDT(timeout=8000)
         self.uart = None
         self.uart_buffer = bytearray()
         self.rdr = StdioReader()
-        self.at = ATCommands(self.config, self.rdr)
+        self.at = ATCommands(self.config, self.event_bus, self.rdr)
 
         # Protocol handlers
         self.hdlc = HDLCProcessor()
@@ -51,11 +56,26 @@ class RNSNOW:
         # Network initialization
         self._init_network()
         
+    async def _change_channel(self, event):
+        try:
+            self.sta.config(channel=event)
+        except Exception as e:
+            self.log.exc(e, "Failed to change channel")
+            machine.reset()
+        self.log.info("WiFi configured - channel %d", self.config.channel)
+
+    async def _change_baudrate(self, event):
+        await self._init_uart()
+
     def _init_network(self):
         try:
             self.sta = network.WLAN(network.STA_IF)
             self.sta.active(True)
-            self.log.debug("WiFi initialized in station mode")
+            self.sta.config(channel=self.config.channel)
+            if self.config.protocol == "lr":
+                self.sta.config(protocol=network.MODE_LR)
+            self.sta.config(pm=self.sta.PM_NONE)
+            self.log.info("WiFi configured - channel %d", self.config.channel)
         except Exception as e:
             self.log.exc(e, "Failed to initialize WiFi")
             machine.reset()
@@ -63,21 +83,9 @@ class RNSNOW:
         try:
             self.espnow = aioespnow.AIOESPNow()
             self.espnow.active(True)
+            self.espnow.add_peer(self.config.mac)
         except Exception as e:
             self.log.exc(e, "Failed to initialize ESP-NOW")
-            machine.reset()
-
-        self.sta.config(channel=self.config.channel)
-        if self.config.protocol == "lr":
-            self.sta.config(protocol=network.MODE_LR)
-        self.sta.config(pm=self.sta.PM_NONE)
-        self.log.info("WiFi configured - channel %d", self.config.channel)
-
-        try:
-            self.espnow.add_peer(self.config.mac)
-            self.log.debug("Broadcast peer configured")
-        except Exception as e:
-            self.log.exc(e, "Failed to add broadcast peer")
             machine.reset()
 
     async def process_uart(self):
@@ -171,8 +179,9 @@ class RNSNOW:
                 timeout=0,
                 timeout_char=0
             )
-            self.log.info("UART%d initialized (TX:%d, RX:%d, %d baud)", 
-                UART_NUM, self.config.tx_pin, self.config.rx_pin, self.config.baudrate)
+            # self.log.info("UART%d initialized (TX:%d, RX:%d, %d baud)", 
+            #     UART_NUM, self.config.tx_pin, self.config.rx_pin, self.config.baudrate)
+            self.log.info("UART%d initialized: %s", UART_NUM, self.uart)
         except Exception as e:
             self.log.exc(e, "UART initialization failed")
         await asyncio.sleep_ms(SLEEP_MEDIUM)

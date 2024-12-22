@@ -2,6 +2,7 @@ from micropython import const
 from machine import Pin, Timer
 import asyncio
 import time
+from eventbus import EventBus
 
 LED_ON = const(0)
 LED_OFF = const(1)
@@ -17,7 +18,7 @@ class Hardware:
         
         self.btn_timer = Timer(1)
         self.btn_timer.init(period=50, mode=Timer.PERIODIC, callback=self._check_buttons)
-        
+
     def _check_buttons(self, _):
         if self.btn.value() == 0:
             current_time = time.ticks_ms()
